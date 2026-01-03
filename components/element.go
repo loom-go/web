@@ -1,19 +1,20 @@
 //go:build js && wasm
 
-package web
+package components
 
 import (
 	"syscall/js"
 
 	. "github.com/AnatoleLucet/loom"
+	"github.com/AnatoleLucet/loom-web/internal"
 	. "github.com/AnatoleLucet/loom/signals"
 )
 
 func Elem(name string, children ...Node) Node {
 	return NodeFunc(func(ctx *RenderContext) error {
-		elem := doc().Call("createElement", name)
+		elem := internal.Doc().Call("createElement", name)
 
-		err := render(ctx, elem, children...)
+		err := internal.RenderNodes(ctx, elem, children...)
 		if err != nil {
 			return err
 		}

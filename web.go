@@ -3,30 +3,24 @@
 package web
 
 import (
-	"syscall/js"
-
-	. "github.com/AnatoleLucet/loom"
-	"github.com/AnatoleLucet/sig"
+	"github.com/AnatoleLucet/loom"
+	"github.com/AnatoleLucet/loom-web/internal"
+	"github.com/AnatoleLucet/loom/signals"
 )
 
-func Render(parent string, node Node) error {
-	// todo: return root owner here with error handling to avoid panics
-	return render(NewRenderContext(), doc().Call("querySelector", parent), node)
-}
+func Render(parent string, node loom.Node) (*signals.Owner, error) {
+	o := signals.NewOwner()
+	o.OnError(func(err any) {
+		internal.ConsoleError("Recovered from panic:", err)
+	})
 
-func render(ctx *RenderContext, parent js.Value, children ...Node) error {
-	for _, child := range children {
-		childCtx := ctx.Clone()
-		childCtx.Set("parent", parent)
-
-		// todo: render shouldn't have to worry about ownership, that should be implicit to the node somehow
-		err := sig.NewOwner().Run(func() error {
-			return child.Render(childCtx)
-		})
-		if err != nil {
-			return err
-		}
+	err := o.Run(func() error {
+		return internal.RenderNodes(loom.NewRenderContext(), internal.Doc().Call("querySelector", parent), node)
+	})
+	if err != nil {
+		o.Dispose()
+		return nil, err
 	}
 
-	return nil
+	return o, nil
 }

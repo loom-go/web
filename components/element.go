@@ -7,27 +7,46 @@ import (
 
 	. "github.com/AnatoleLucet/loom"
 	"github.com/AnatoleLucet/loom-web/internal"
-	. "github.com/AnatoleLucet/loom/signals"
 )
 
 func Elem(name string, children ...Node) Node {
-	return NodeFunc(func(ctx *RenderContext) error {
-		elem := internal.Doc().Call("createElement", name)
+	return &elemNode{name: name, children: children}
+}
 
-		err := internal.RenderNodes(ctx, elem, children...)
-		if err != nil {
-			return err
-		}
+type elemNode struct {
+	name     string
+	children []Node
+}
 
-		parent := ctx.Get("parent").(js.Value)
-		parent.Call("appendChild", elem)
+func (n *elemNode) ID() string {
+	return "web.Elem." + n.name
+}
 
-		OnCleanup(func() {
-			parent.Call("removeChild", elem)
-		})
+func (n *elemNode) Mount(slot *Slot) error {
+	parent := slot.Parent().(js.Value)
 
+	self := internal.Doc().Call("createElement", n.name)
+	slot.SetSelf(self)
+
+	parent.Call("appendChild", self)
+
+	return n.Update(slot)
+}
+
+func (n *elemNode) Update(slot *Slot) error {
+	return slot.RenderChildren(n.children...)
+}
+
+func (n *elemNode) Unmount(slot *Slot) error {
+	if slot.Self() == nil {
 		return nil
-	})
+	}
+
+	parent := slot.Parent().(js.Value)
+	self := slot.Self().(js.Value)
+	parent.Call("removeChild", self)
+
+	return nil
 }
 
 func Input(typ string, attrs ...Node) Node {

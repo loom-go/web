@@ -6,7 +6,6 @@ import (
 	"syscall/js"
 
 	. "github.com/AnatoleLucet/loom"
-	. "github.com/AnatoleLucet/loom/signals"
 )
 
 type Event struct{ v js.Value }
@@ -77,23 +76,49 @@ func On[T interface {
 	*E
 	init(js.Value)
 }, E any](event string, handler func(T)) Node {
-	return NodeFunc(func(ctx *RenderContext) error {
-		handler := js.FuncOf(func(this js.Value, args []js.Value) any {
-			e := T(new(E))
-			e.init(args[0])
+	return &eventNode[T, E]{event: event, handler: handler}
+}
 
-			handler(e)
+type eventNode[T interface {
+	*E
+	init(js.Value)
+}, E any] struct {
+	event   string
+	handler func(T)
+	jsFunc  js.Func
+}
 
-			return nil
-		})
+func (n *eventNode[T, E]) ID() string {
+	return "web.Event." + n.event
+}
 
-		parent := ctx.Get("parent").(js.Value)
-		parent.Call("addEventListener", event, handler)
+func (n *eventNode[T, E]) Mount(slot *Slot) error {
+	parent := slot.Parent().(js.Value)
 
-		OnCleanup(func() {
-			parent.Call("removeEventListener", event, handler)
-		})
-
+	n.jsFunc = js.FuncOf(func(this js.Value, args []js.Value) any {
+		e := T(new(E))
+		e.init(args[0])
+		n.handler(e)
 		return nil
 	})
+
+	parent.Call("addEventListener", n.event, n.jsFunc)
+
+	return nil
+}
+
+func (n *eventNode[T, E]) Update(slot *Slot) error {
+	return nil
+}
+
+func (n *eventNode[T, E]) Unmount(slot *Slot) error {
+	if n.jsFunc.Value.IsUndefined() {
+		return nil
+	}
+
+	parent := slot.Parent().(js.Value)
+	parent.Call("removeEventListener", n.event, n.jsFunc)
+	n.jsFunc.Release()
+
+	return nil
 }

@@ -8,32 +8,48 @@ import (
 	. "github.com/AnatoleLucet/loom"
 	"github.com/AnatoleLucet/loom-web/internal"
 	. "github.com/AnatoleLucet/loom/components"
-	. "github.com/AnatoleLucet/loom/signals"
 )
 
 func Text(content any) Node {
-	return NodeFunc(func(ctx *RenderContext) error {
-		parent := ctx.Get("parent").(js.Value)
+	return &textNode{content: content}
+}
 
-		// update
-		if ctx.Get("self") != nil {
-			self := ctx.Get("self").(js.Value)
-			self.Set("nodeValue", content)
-			return nil
-		}
+type textNode struct {
+	content any
+}
 
-		// mount
-		self := internal.Doc().Call("createTextNode", content)
-		ctx.Set("self", self)
-		parent.Call("appendChild", self)
+func (n *textNode) ID() string {
+	return "web.Text"
+}
 
-		// cleanup
-		OnCleanup(func() {
-			parent.Call("removeChild", self)
-		})
+func (n *textNode) Mount(slot *Slot) error {
+	parent := slot.Parent().(js.Value)
 
+	self := internal.Doc().Call("createTextNode", n.content)
+	slot.SetSelf(self)
+
+	parent.Call("appendChild", self)
+
+	return nil
+}
+
+func (n *textNode) Update(slot *Slot) error {
+	self := slot.Self().(js.Value)
+	self.Set("nodeValue", n.content)
+
+	return nil
+}
+
+func (n *textNode) Unmount(slot *Slot) error {
+	if slot.Self() == nil {
 		return nil
-	})
+	}
+
+	parent := slot.Parent().(js.Value)
+	self := slot.Self().(js.Value)
+	parent.Call("removeChild", self)
+
+	return nil
 }
 
 func BindText[T any](value func() T) Node {

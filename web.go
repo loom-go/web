@@ -24,7 +24,7 @@ func NewApp() *App {
 }
 
 func (a *App) Run(parent string, node loom.Node) <-chan any {
-	errc := make(chan any)
+	errc := make(chan any, 1)
 	if a.running {
 		errc <- errors.New("app is already running")
 		return errc
@@ -46,10 +46,8 @@ func (a *App) Run(parent string, node loom.Node) <-chan any {
 
 func (a *App) Render(parent string, node loom.Node) error {
 	err := a.owner.Run(func() error {
-		ctx := loom.NewRenderContext()
 		container := internal.Doc().Call("querySelector", parent)
-
-		return internal.RenderNodes(ctx, container, node)
+		return loom.Render(container, node)
 	})
 
 	if err != nil {

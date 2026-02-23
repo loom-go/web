@@ -49,33 +49,6 @@ func (n *elemNode) Unmount(slot *Slot) error {
 	return nil
 }
 
-func Input(typ string, attrs ...Node) Node {
-	attrs = append([]Node{Attr("type", typ)}, attrs...)
-	return Elem("input", attrs...)
-}
-func BindInput(typ func() string, attrs ...Node) Node {
-	attrs = append([]Node{BindAttr("type", typ)}, attrs...)
-	return Elem("input", attrs...)
-}
-func Img(src string, attrs ...Node) Node {
-	attrs = append([]Node{Attr("src", src)}, attrs...)
-	return Elem("img", attrs...)
-}
-func BindImg(src func() string, attrs ...Node) Node {
-	attrs = append([]Node{BindAttr("src", src)}, attrs...)
-	return Elem("img", attrs...)
-}
-func A(href string, children ...Node) Node {
-	attrs := []Node{Attr("href", href)}
-	attrs = append(attrs, children...)
-	return Elem("a", attrs...)
-}
-func BindA(href func() string, children ...Node) Node {
-	attrs := []Node{BindAttr("href", href)}
-	attrs = append(attrs, children...)
-	return Elem("a", attrs...)
-}
-
 func Div(children ...Node) Node    { return Elem("div", children...) }
 func Span(children ...Node) Node   { return Elem("span", children...) }
 func P(children ...Node) Node      { return Elem("p", children...) }
@@ -89,3 +62,6 @@ func Ol(children ...Node) Node     { return Elem("ol", children...) }
 func Li(children ...Node) Node     { return Elem("li", children...) }
 func Form(children ...Node) Node   { return Elem("form", children...) }
 func Button(children ...Node) Node { return Elem("button", children...) }
+func Input(children ...Node) Node  { return Elem("input", children...) }
+func Img(children ...Node) Node    { return Elem("img", children...) }
+func A(children ...Node) Node      { return Elem("a", children...) }

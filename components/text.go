@@ -5,9 +5,9 @@ package components
 import (
 	"syscall/js"
 
-	. "github.com/AnatoleLucet/loom"
-	"github.com/AnatoleLucet/loom-web/internal"
-	. "github.com/AnatoleLucet/loom/components"
+	. "github.com/loom-go/loom"
+	. "github.com/loom-go/loom/components"
+	"github.com/loom-go/web/internal"
 )
 
 func Text(content any) Node {

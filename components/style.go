@@ -5,7 +5,7 @@ package components
 import (
 	"syscall/js"
 
-	. "github.com/AnatoleLucet/loom"
+	. "github.com/loom-go/loom"
 )
 
 type Style map[string]any

@@ -5,9 +5,9 @@ package web
 import (
 	"errors"
 
-	"github.com/AnatoleLucet/loom"
-	"github.com/AnatoleLucet/loom-web/internal"
-	"github.com/AnatoleLucet/loom/signals"
+	"github.com/loom-go/loom"
+	"github.com/loom-go/loom/signals"
+	"github.com/loom-go/web/internal"
 )
 
 type App struct {

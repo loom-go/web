@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"syscall/js"
 
-	. "github.com/AnatoleLucet/loom"
-	. "github.com/AnatoleLucet/loom/components"
+	. "github.com/loom-go/loom"
+	. "github.com/loom-go/loom/components"
 )
 
 func Attr(name, value any) Node {

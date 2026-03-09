@@ -5,8 +5,8 @@ package components
 import (
 	"syscall/js"
 
-	. "github.com/AnatoleLucet/loom"
-	"github.com/AnatoleLucet/loom-web/internal"
+	. "github.com/loom-go/loom"
+	"github.com/loom-go/web/internal"
 )
 
 func Elem(name string, children ...Node) Node {

@@ -3,53 +3,85 @@
 package components
 
 import (
-	"fmt"
+	"reflect"
 	"syscall/js"
 
-	. "github.com/loom-go/loom"
-	. "github.com/loom-go/loom/components"
+	"github.com/loom-go/loom/components"
 )
 
-func Attr(name, value any) Node {
-	return &attrNode{name: name, value: value}
-}
+type Attr = Attribute
 
-type attrNode struct {
-	name  any
-	value any
-}
+type Attribute map[string]any
 
-func (n *attrNode) ID() string {
-	return fmt.Sprintf("web.Attr.%v", n.name)
-}
+func (a Attribute) Apply(parent any) (func() error, error) {
+	p := parent.(*js.Value)
 
-func (n *attrNode) Mount(slot *Slot) error {
-	slot.SetNode(n)
-
-	return n.Update(slot)
-}
-
-func (n *attrNode) Update(slot *Slot) error {
-	parent := slot.Parent().(js.Value)
-	slot.SetNode(n)
-
-	if n.name == "value" || n.name == "checked" || n.name == "selected" {
-		parent.Set(n.name.(string), n.value)
-		return nil
+	var removers []func() error
+	for name, value := range a {
+		removers = append(removers, a.applyAttr(p, name, value))
 	}
 
-	parent.Call("setAttribute", n.name, n.value)
-	return nil
+	return func() error {
+		for _, remove := range removers {
+			if err := remove(); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}, nil
 }
 
-func (n *attrNode) Unmount(slot *Slot) error {
-	parent := slot.Parent().(js.Value)
-	parent.Call("removeAttribute", n.name)
-	return nil
+func (a Attribute) applyAttr(parent *js.Value, name string, value any) func() error {
+	val, vok := unwrapAccessor[any](value)
+	if !vok {
+		return func() error { return nil }
+	}
+
+	if name == "value" || name == "checked" || name == "selected" {
+		parent.Set(name, val)
+		return func() error { return nil }
+	}
+
+	parent.Call("setAttribute", name, val)
+
+	return func() error {
+		parent.Call("removeAttribute", name)
+		return nil
+	}
 }
 
-func BindAttr[T any](name string, value func() T) Node {
-	return Bind(func() Node {
-		return Attr(name, value())
-	})
+// little helper to unwrap a `T | func() T`. mainly used in Appliers
+func unwrapAccessor[V any](value any) (v V, vok bool) {
+	if sig, ok := value.(func() V); ok {
+		value = sig()
+	} else if fn, ok := value.(func() any); ok {
+		value = fn()
+	} else if fn, ok := value.(components.Accessor[V]); ok {
+		value = fn()
+	} else if fn, ok := value.(components.Accessor[any]); ok {
+		value = fn()
+	} else {
+		// fallback to reflect for calling the accessor
+		rv := reflect.ValueOf(value)
+		isFunc := rv.Kind() == reflect.Func
+		if isFunc && rv.Type().NumIn() == 0 && rv.Type().NumOut() == 1 {
+			value = rv.Call(nil)[0].Interface()
+		}
+	}
+
+	if val, ok := value.(V); ok {
+		v = val
+		vok = true
+	} else {
+		// fallback to reflect for converting the value
+		rv := reflect.ValueOf(value)
+		target := reflect.TypeFor[V]()
+		if rv.IsValid() && rv.Type().ConvertibleTo(target) {
+			v = rv.Convert(target).Interface().(V)
+			vok = true
+		}
+	}
+
+	return
 }

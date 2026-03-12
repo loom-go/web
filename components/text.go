@@ -23,10 +23,10 @@ func (n *textNode) ID() string {
 }
 
 func (n *textNode) Mount(slot *Slot) error {
-	parent := slot.Parent().(js.Value)
+	parent := slot.Parent().(*js.Value)
 
 	self := internal.Doc().Call("createTextNode", n.content)
-	slot.SetSelf(self)
+	slot.SetSelf(&self)
 
 	parent.Call("appendChild", self)
 
@@ -34,7 +34,7 @@ func (n *textNode) Mount(slot *Slot) error {
 }
 
 func (n *textNode) Update(slot *Slot) error {
-	self := slot.Self().(js.Value)
+	self := slot.Self().(*js.Value)
 	self.Set("nodeValue", n.content)
 
 	return nil
@@ -45,8 +45,8 @@ func (n *textNode) Unmount(slot *Slot) error {
 		return nil
 	}
 
-	parent := slot.Parent().(js.Value)
-	self := slot.Self().(js.Value)
+	parent := slot.Parent().(*js.Value)
+	self := slot.Self().(*js.Value)
 	parent.Call("removeChild", self)
 
 	return nil

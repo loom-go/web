@@ -23,10 +23,10 @@ func (n *elemNode) ID() string {
 }
 
 func (n *elemNode) Mount(slot *Slot) error {
-	parent := slot.Parent().(js.Value)
+	parent := slot.Parent().(*js.Value)
 
 	self := internal.Doc().Call("createElement", n.name)
-	slot.SetSelf(self)
+	slot.SetSelf(&self)
 
 	parent.Call("appendChild", self)
 
@@ -42,16 +42,21 @@ func (n *elemNode) Unmount(slot *Slot) error {
 		return nil
 	}
 
-	parent := slot.Parent().(js.Value)
-	self := slot.Self().(js.Value)
+	parent := slot.Parent().(*js.Value)
+	self := slot.Self().(*js.Value)
 	parent.Call("removeChild", self)
 
 	return nil
 }
 
 func Div(children ...Node) Node    { return Elem("div", children...) }
+func Br() Node                     { return Elem("br") }
 func Span(children ...Node) Node   { return Elem("span", children...) }
 func P(children ...Node) Node      { return Elem("p", children...) }
+func S(children ...Node) Node      { return Elem("s", children...) }
+func B(children ...Node) Node      { return Elem("b", children...) }
+func I(children ...Node) Node      { return Elem("i", children...) }
+func U(children ...Node) Node      { return Elem("u", children...) }
 func H1(children ...Node) Node     { return Elem("h1", children...) }
 func H2(children ...Node) Node     { return Elem("h2", children...) }
 func H3(children ...Node) Node     { return Elem("h3", children...) }

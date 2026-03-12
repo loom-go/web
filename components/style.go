@@ -4,39 +4,42 @@ package components
 
 import (
 	"syscall/js"
-
-	. "github.com/loom-go/loom"
 )
+
+// todo: put static styles in a <style> in the head instead of applying them inline
+// just apply inline the reactive styles.
 
 type Style map[string]any
 
-func (s Style) ID() string {
-	return "web.Style"
-}
+func (s Style) Apply(parent any) (func() error, error) {
+	p := parent.(*js.Value)
 
-func (s Style) Mount(slot *Slot) error {
-	return s.Update(slot)
-}
-
-func (s Style) Update(slot *Slot) error {
-	parent := slot.Parent().(js.Value)
-	style := parent.Get("style")
-	slot.SetNode(s)
-
+	var removers []func() error
 	for key, value := range s {
-		style.Set(key, value)
+		removers = append(removers, s.applyStyle(p, key, value))
 	}
 
-	return nil
+	return func() error {
+		for _, remove := range removers {
+			if err := remove(); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}, nil
 }
 
-func (s Style) Unmount(slot *Slot) error {
-	parent := slot.Parent().(js.Value)
-	style := parent.Get("style")
-
-	for key := range s {
-		style.Set(key, "")
+func (s Style) applyStyle(parent *js.Value, key string, value any) func() error {
+	val, vok := unwrapAccessor[any](value)
+	if !vok {
+		return func() error { return nil }
 	}
 
-	return nil
+	parent.Get("style").Set(key, val)
+
+	return func() error {
+		parent.Get("style").Set(key, "")
+		return nil
+	}
 }

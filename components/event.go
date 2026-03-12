@@ -3,9 +3,9 @@
 package components
 
 import (
+	"fmt"
+	"reflect"
 	"syscall/js"
-
-	. "github.com/loom-go/loom"
 )
 
 type Event struct{ v js.Value }
@@ -72,53 +72,70 @@ func (e EventKeyboard) MetaKey() bool { return e.v.Get("metaKey").Bool() }
 // Repeat indicates whether the key is being held down such that it is automatically repeating.
 func (e EventKeyboard) Repeat() bool { return e.v.Get("repeat").Bool() }
 
-func On[T interface {
-	*E
+type initer interface {
 	init(js.Value)
-}, E any](event string, handler func(T)) Node {
-	return &eventNode[T, E]{event: event, handler: handler}
 }
 
-type eventNode[T interface {
-	*E
-	init(js.Value)
-}, E any] struct {
-	event   string
-	handler func(T)
-	jsFunc  js.Func
+type On map[string]any // map[string]func[T Event](*T)
+
+func (o On) Apply(parent any) (func() error, error) {
+	p := parent.(*js.Value)
+
+	var removers []func() error
+	for name, handler := range o {
+		remove, err := o.applyEvent(p, name, handler)
+		if err != nil {
+			return func() error { return nil }, fmt.Errorf("failed to apply event %s: %w", name, err)
+		}
+		removers = append(removers, remove)
+	}
+
+	return func() error {
+		for _, remove := range removers {
+			if err := remove(); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}, nil
 }
 
-func (n *eventNode[T, E]) ID() string {
-	return "web.Event." + n.event
-}
+func (o On) applyEvent(parent *js.Value, name string, handler any) (func() error, error) {
+	hv := reflect.ValueOf(handler)
+	ht := hv.Type()
 
-func (n *eventNode[T, E]) Mount(slot *Slot) error {
-	parent := slot.Parent().(js.Value)
+	var h func(js.Value)
 
-	n.jsFunc = js.FuncOf(func(this js.Value, args []js.Value) any {
-		e := T(new(E))
-		e.init(args[0])
-		n.handler(e)
+	if ht.Kind() == reflect.Func && ht.NumOut() == 0 {
+		switch ht.NumIn() {
+		case 0:
+			h = func(js.Value) { hv.Call(nil) }
+		case 1:
+			et := ht.In(0)
+			if et.Kind() == reflect.Pointer && et.Implements(reflect.TypeFor[initer]()) {
+				h = func(v js.Value) {
+					e := reflect.New(et.Elem())
+					e.Interface().(initer).init(v)
+					hv.Call([]reflect.Value{e})
+				}
+			}
+		}
+	}
+
+	if h == nil {
+		return func() error { return nil }, fmt.Errorf("invalid event handler of type %T for event %s", handler, name)
+	}
+
+	jsFunc := js.FuncOf(func(this js.Value, args []js.Value) any {
+		h(args[0])
 		return nil
 	})
 
-	parent.Call("addEventListener", n.event, n.jsFunc)
-
-	return nil
-}
-
-func (n *eventNode[T, E]) Update(slot *Slot) error {
-	return nil
-}
-
-func (n *eventNode[T, E]) Unmount(slot *Slot) error {
-	if n.jsFunc.Value.IsUndefined() {
+	parent.Call("addEventListener", name, jsFunc)
+	return func() error {
+		parent.Call("removeEventListener", name, jsFunc)
+		jsFunc.Release()
 		return nil
-	}
-
-	parent := slot.Parent().(js.Value)
-	parent.Call("removeEventListener", n.event, n.jsFunc)
-	n.jsFunc.Release()
-
-	return nil
+	}, nil
 }

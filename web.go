@@ -47,7 +47,7 @@ func (a *App) Run(parent string, fn func() loom.Node) <-chan any {
 func (a *App) Render(parent string, fn func() loom.Node) error {
 	err := a.owner.Run(func() error {
 		container := internal.Doc().Call("querySelector", parent)
-		_, err := loom.Render(container, fn())
+		_, err := loom.Render(&container, fn())
 		return err
 	})
 

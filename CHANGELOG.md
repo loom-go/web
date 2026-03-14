@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/loom-go/web/compare/v0.1.0...v0.2.0) (2026-03-14)
+
+
+### Features
+
+* new style, events, attrs appliers ([8017273](https://github.com/loom-go/web/commit/8017273f79fb2656e197a28abb9c7ec674a68137))
+
 ## [0.1.0](https://github.com/loom-go/web/compare/v0.1.0...v0.1.0) (2026-03-10)
 
 

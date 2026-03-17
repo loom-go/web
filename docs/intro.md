@@ -9,5 +9,7 @@ weight: 1
 In the mean time **LOOM-WEB** is still a very simple project with only a few hundred lines of code,
 making it a very good example of what a simple renderer looks like.
 <br/>
-If you'd like to help improve **LOOM-WEB**, come and say hi on [Discord](https://discord.gg/DfDCFCHp92).
+If you'd like to help improve **LOOM-WEB**, come and say hi on [Discord](https://discord.gg/DfDCFCHp92)!
 {{< /callout >}}
+
+The documentation for **LOOM-WEB** is work in progress. Refer to the [main documentation](/docs) to learn loom.
